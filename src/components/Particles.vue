@@ -27,18 +27,35 @@ export default defineComponent({
       scene.add(camera)
 
       const geometry = new THREE.BufferGeometry()
-      const count = 500
+      const count = 10000
+      const branches = 4
       const positions = new Float32Array(count * 3)
+      const randomnessAddtional = 0.15
+      const randomnessOnSelf = 7
+      const randoemnesOnRadius = 1/6
 
-      for (let i = 0; i < count * 3; i++) {
-        positions[i] = (Math.random() - 0.5) * 10
+      for (let i = 0; i < count; i++) {
+
+        const points = i * 3
+        const spinFraction = i % branches
+        const spinAngle = 2 * Math.PI * (spinFraction / branches)
+        const radius = Math.random() * 7
+        const randomnessParameter = randomnessOnSelf * Math.pow(radius * randoemnesOnRadius, 2)
+
+        positions[points] = radius * Math.sin(spinAngle + radius) + Math.pow((Math.random() - 0.5) * randomnessParameter, 3) + (Math.random() - 0.5) * randomnessAddtional
+        positions[points + 1] = Math.pow((Math.random() - 0.5) * randomnessParameter, 3) + (Math.random() - 0.5) * randomnessAddtional
+        positions[points + 2] = radius * Math.cos(spinAngle + radius) + Math.pow((Math.random() - 0.5) * randomnessParameter, 3) + (Math.random() - 0.5) * randomnessAddtional
+
       }
 
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
 
       const points = new THREE.PointsMaterial({
         size: 0.02,
-        sizeAttenuation: true
+        sizeAttenuation: true,
+        color: new THREE.Color('white'),
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
       })
 
       const particles = new THREE.Points(geometry, points)
