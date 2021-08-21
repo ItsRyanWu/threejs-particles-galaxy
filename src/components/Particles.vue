@@ -6,6 +6,10 @@
 import { ref, defineComponent, onMounted } from 'vue'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import * as dat from "dat.gui"
+import { BufferGeometry, Points, PointsMaterial } from 'three'
+
+const gui = new dat.GUI()
 
 export default defineComponent({
   name: 'Particles',
@@ -23,66 +27,101 @@ export default defineComponent({
       const scene = new THREE.Scene()
       const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
 
-      camera.position.set(4, 3, 6)
+      camera.position.set(20, 10, 6)
       scene.add(camera)
 
-      const geometry = new THREE.BufferGeometry()
-      const count = 15000
-      const branches = 8
-      const positions = new Float32Array(count * 3)
-      const colors = new Float32Array(count * 3)
-      const randoemnesOnRadiusEnlarge = 2
-      const randoemnesOnRadius = 1/10
-      const radius = 20
-      const pointsOffset = 1/2
-      const innerColor = new THREE.Color('#ff3c30')
-      const outerColor = new THREE.Color('#1b7184')
-
-      function spinPoints([x, y], radians) {
-        return [x * Math.sin(radians + x * pointsOffset), y * Math.cos(radians + y * pointsOffset)]
+      const preferences = {
+        particleQuantity: 20000,
+        branches: 8,
+        randomnessOnRadiusExpanding: 1/10,
+        randomnessAmplification: 2,
+        radius: 20,
+        particlesRotation: 0.7,
+        innerColor: '#ff3c30',
+        outerColor: '#1498bb'
       }
 
-      function random() {
-        return Math.random() - 0.5
+      let geometry: BufferGeometry = null
+      let material: PointsMaterial = null
+      let particles: Points = null
+      let hasExistedGalaxy = false
+
+      function generateGalaxy() {
+
+        if (hasExistedGalaxy) {
+
+          geometry.dispose()
+          material.dispose()
+          scene.remove(particles)
+
+        }
+
+        geometry = new THREE.BufferGeometry()
+        const positions = new Float32Array(preferences.particleQuantity * 3)
+        const colors = new Float32Array(preferences.particleQuantity * 3)
+        const innerColor = new THREE.Color(preferences.innerColor)
+        const outerColor = new THREE.Color(preferences.outerColor)
+
+        function spinPoints([x, y], radians) {
+          return [x * Math.sin(radians + x * preferences.particlesRotation), y * Math.cos(radians + y * preferences.particlesRotation)]
+        }
+
+        function random() {
+          return Math.random() - 0.5
+        }
+
+        function generateRandomness(enlarge) {
+          return Math.pow(random(), 3) + random() * enlarge
+        }
+
+        for (let i = 0; i < preferences.particleQuantity; i++) {
+
+          const points = i * 3
+          const spinFraction = i % preferences.branches
+          const spinRadians = 2 * Math.PI * (spinFraction / preferences.branches)
+          const originalPointRadius = Math.pow(Math.random(), 1.5) * preferences.radius
+          const randomnessParameter = preferences.randomnessAmplification * Math.pow(originalPointRadius * preferences.randomnessOnRadiusExpanding, 2)
+          const spinedPoints = spinPoints([originalPointRadius, originalPointRadius], spinRadians)
+          const color = innerColor.clone().lerp(outerColor, Math.pow(originalPointRadius / preferences.radius, 1/1.5))
+
+          positions[points] = spinedPoints[0] + generateRandomness(randomnessParameter)
+          positions[points + 1] = Math.pow(generateRandomness(randomnessParameter), 3) + random() * (1 / (originalPointRadius * 1))
+          positions[points + 2] = spinedPoints[1] + generateRandomness(randomnessParameter)
+          colors[points] = color.r
+          colors[points + 1] = color.g
+          colors[points + 2] = color.b
+
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+
+        material = new THREE.PointsMaterial({
+          size: 0.08,
+          sizeAttenuation: true,
+          vertexColors: true,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending
+        })
+
+        particles = new THREE.Points(geometry, material)
+
+        scene.add(particles)
+
+        hasExistedGalaxy = true
+
       }
 
-      function generateRandomness(enlarge) {
-        return Math.pow(random(), 3) + random() * enlarge
-      }
+      generateGalaxy()
 
-      for (let i = 0; i < count; i++) {
-
-        const points = i * 3
-        const spinFraction = i % branches
-        const spinRadians = 2 * Math.PI * (spinFraction / branches)
-        const originalPointRadius = Math.pow(Math.random(), 1.5) * radius
-        const randomnessParameter = randoemnesOnRadiusEnlarge * Math.pow(originalPointRadius * randoemnesOnRadius, 2)
-        const spinedPoints = spinPoints([originalPointRadius, originalPointRadius], spinRadians)
-        const color = innerColor.clone().lerp(outerColor, originalPointRadius * 1.5 / radius)
-
-        positions[points] = spinedPoints[0] + generateRandomness(randomnessParameter)
-        positions[points + 1] = Math.pow(generateRandomness(randomnessParameter), 3) + random() * (1 / (originalPointRadius * 1))
-        positions[points + 2] = spinedPoints[1] + generateRandomness(randomnessParameter)
-        colors[points] = color.r
-        colors[points + 1] = color.g
-        colors[points + 2] = color.b
-
-      }
-
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
-
-      const points = new THREE.PointsMaterial({
-        size: 0.1,
-        sizeAttenuation: true,
-        vertexColors: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending
-      })
-
-      const particles = new THREE.Points(geometry, points)
-
-      scene.add(particles)
+      gui.add(preferences, 'particleQuantity').min(5000).max(50000).step(1000).onFinishChange(generateGalaxy)
+      gui.add(preferences, 'branches').min(2).max(20).step(1).onFinishChange(generateGalaxy)
+      gui.add(preferences, 'randomnessOnRadiusExpanding').min(1/50).max(0.15).onFinishChange(generateGalaxy)
+      gui.add(preferences, 'randomnessAmplification').min(1).max(10).step(1).onFinishChange(generateGalaxy)
+      gui.add(preferences, 'radius').min(5).max(50).step(5).onFinishChange(generateGalaxy)
+      gui.add(preferences, 'particlesRotation').min(0).max(4).onFinishChange(generateGalaxy)
+      gui.addColor(preferences, 'innerColor').onFinishChange(generateGalaxy)
+      gui.addColor(preferences, 'outerColor').onFinishChange(generateGalaxy)
 
       const controls = new OrbitControls(camera, canvas)
       controls.enableDamping = true
