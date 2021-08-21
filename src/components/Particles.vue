@@ -23,28 +23,42 @@ export default defineComponent({
       const scene = new THREE.Scene()
       const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
 
-      camera.position.set(1, 1, 1)
+      camera.position.set(4, 3, 6)
       scene.add(camera)
 
       const geometry = new THREE.BufferGeometry()
       const count = 10000
-      const branches = 4
+      const branches = 6
       const positions = new Float32Array(count * 3)
-      const randomnessAddtional = 0.15
-      const randomnessOnSelf = 7
+      const randoemnesOnRadiusEnlarge = 3
       const randoemnesOnRadius = 1/6
+      const radius = 10
+      const pointsOffset = 1/2
+
+      function spinPoints([x, y], radians) {
+        return [x * Math.sin(radians + x * pointsOffset), y * Math.cos(radians + y * pointsOffset)]
+      }
+
+      function random() {
+        return Math.random() - 0.5
+      }
+
+      function generateRandomness(enlarge) {
+        return Math.pow(random(), 3) + random() * enlarge
+      }
 
       for (let i = 0; i < count; i++) {
 
         const points = i * 3
         const spinFraction = i % branches
-        const spinAngle = 2 * Math.PI * (spinFraction / branches)
-        const radius = Math.random() * 7
-        const randomnessParameter = randomnessOnSelf * Math.pow(radius * randoemnesOnRadius, 2)
+        const spinRadians = 2 * Math.PI * (spinFraction / branches)
+        const originalPointRadius = Math.pow(Math.random(), 1.5) * radius
+        const randomnessParameter = randoemnesOnRadiusEnlarge * Math.pow(originalPointRadius * randoemnesOnRadius, 2)
+        const spinedPoints = spinPoints([originalPointRadius, originalPointRadius], spinRadians)
 
-        positions[points] = radius * Math.sin(spinAngle + radius) + Math.pow((Math.random() - 0.5) * randomnessParameter, 3) + (Math.random() - 0.5) * randomnessAddtional
-        positions[points + 1] = Math.pow((Math.random() - 0.5) * randomnessParameter, 3) + (Math.random() - 0.5) * randomnessAddtional
-        positions[points + 2] = radius * Math.cos(spinAngle + radius) + Math.pow((Math.random() - 0.5) * randomnessParameter, 3) + (Math.random() - 0.5) * randomnessAddtional
+        positions[points] = spinedPoints[0] + generateRandomness(randomnessParameter)
+        positions[points + 1] = Math.pow(generateRandomness(randomnessParameter), 3) + random() * (1 / (originalPointRadius * 4))
+        positions[points + 2] = spinedPoints[1] + generateRandomness(randomnessParameter)
 
       }
 
