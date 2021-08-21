@@ -27,13 +27,16 @@ export default defineComponent({
       scene.add(camera)
 
       const geometry = new THREE.BufferGeometry()
-      const count = 10000
-      const branches = 6
+      const count = 15000
+      const branches = 8
       const positions = new Float32Array(count * 3)
-      const randoemnesOnRadiusEnlarge = 3
-      const randoemnesOnRadius = 1/6
-      const radius = 10
+      const colors = new Float32Array(count * 3)
+      const randoemnesOnRadiusEnlarge = 2
+      const randoemnesOnRadius = 1/10
+      const radius = 20
       const pointsOffset = 1/2
+      const innerColor = new THREE.Color('#ff3c30')
+      const outerColor = new THREE.Color('#1b7184')
 
       function spinPoints([x, y], radians) {
         return [x * Math.sin(radians + x * pointsOffset), y * Math.cos(radians + y * pointsOffset)]
@@ -55,19 +58,24 @@ export default defineComponent({
         const originalPointRadius = Math.pow(Math.random(), 1.5) * radius
         const randomnessParameter = randoemnesOnRadiusEnlarge * Math.pow(originalPointRadius * randoemnesOnRadius, 2)
         const spinedPoints = spinPoints([originalPointRadius, originalPointRadius], spinRadians)
+        const color = innerColor.clone().lerp(outerColor, originalPointRadius * 1.5 / radius)
 
         positions[points] = spinedPoints[0] + generateRandomness(randomnessParameter)
-        positions[points + 1] = Math.pow(generateRandomness(randomnessParameter), 3) + random() * (1 / (originalPointRadius * 4))
+        positions[points + 1] = Math.pow(generateRandomness(randomnessParameter), 3) + random() * (1 / (originalPointRadius * 1))
         positions[points + 2] = spinedPoints[1] + generateRandomness(randomnessParameter)
+        colors[points] = color.r
+        colors[points + 1] = color.g
+        colors[points + 2] = color.b
 
       }
 
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
 
       const points = new THREE.PointsMaterial({
-        size: 0.02,
+        size: 0.1,
         sizeAttenuation: true,
-        color: new THREE.Color('white'),
+        vertexColors: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending
       })
