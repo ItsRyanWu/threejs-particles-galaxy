@@ -27,7 +27,7 @@ export default defineComponent({
       const scene = new THREE.Scene()
       const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100)
 
-      camera.position.set(20, 10, 6)
+      camera.position.set(22, 8, 6)
       scene.add(camera)
 
       const preferences = {
@@ -150,6 +150,10 @@ export default defineComponent({
       const clock = new THREE.Clock()
 
       const tick = () => {
+         
+          const elapsedTime = clock.getElapsedTime()
+          console.log(elapsedTime)
+          particles.rotation.y = -elapsedTime/10
           controls.update()
           renderer.render(scene, camera)
           window.requestAnimationFrame(tick)
