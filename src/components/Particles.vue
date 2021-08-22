@@ -152,8 +152,7 @@ export default defineComponent({
       const tick = () => {
          
           const elapsedTime = clock.getElapsedTime()
-          console.log(elapsedTime)
-          particles.rotation.y = -elapsedTime/10
+          particles.rotation.y = -elapsedTime / 10
           controls.update()
           renderer.render(scene, camera)
           window.requestAnimationFrame(tick)
